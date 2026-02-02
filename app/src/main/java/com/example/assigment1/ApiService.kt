@@ -7,11 +7,11 @@ import retrofit2.http.POST
 
 interface ApiService {
     @POST("auth/register")
-    suspend fun register(@Body data: Map<String, String>): Response<ApiResponse<User>>
+    suspend fun register(@Body data: RegisterRequest): Response<ApiResponse<User>>
 
-
+    // Changed return type to ApiResponse<User> assuming user is returned directly in data
     @POST("auth/login")
-    suspend fun login(@Body data: Map<String, String>): Response<ApiResponse<LoginResponse>>
+    suspend fun login(@Body data: Map<String, String>): Response<ApiResponse<User>>
 
     @POST("auth/logout")
     suspend fun logout(): Response<ApiResponse<Unit>>

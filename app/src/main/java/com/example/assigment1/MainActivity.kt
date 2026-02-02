@@ -5,6 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,15 +31,44 @@ fun StreamingApp() {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = viewModel()
     val contentViewModel: ContentViewModel = viewModel()
+    
+    val currentUser by authViewModel.currentUser.collectAsState()
+    
+    // Global navigation observer
+    LaunchedEffect(Unit) {
+        authViewModel.navigationEvent.collect { route ->
+            navController.navigate(route) {
+                if (route == "dashboard") {
+                    popUpTo("login") { inclusive = true }
+                } else if (route == "login") {
+                    popUpTo("dashboard") { inclusive = true }
+                }
+            }
+        }
+    }
+    
+    val startDestination = if (currentUser != null) "dashboard" else "login"
 
-    NavHost(navController = navController, startDestination = "login") {
+    NavHost(navController = navController, startDestination = startDestination) {
         composable("login") {
             LoginScreen(
                 viewModel = authViewModel,
                 onLoginSuccess = {
+                    // Handled by navigationEvent, but keeping for safety
                     navController.navigate("dashboard") {
                         popUpTo("login") { inclusive = true }
                     }
+                },
+                onRegisterClick = {
+                    navController.navigate("register")
+                }
+            )
+        }
+        composable("register") {
+            RegisterScreen(
+                viewModel = authViewModel,
+                onBackToLogin = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -46,9 +78,6 @@ fun StreamingApp() {
                 authViewModel = authViewModel,
                 onLogout = {
                     authViewModel.logout()
-                    navController.navigate("login") {
-                        popUpTo("dashboard") { inclusive = true }
-                    }
                 },
                 onContentClick = { contentId ->
                     navController.navigate("detail/$contentId")
